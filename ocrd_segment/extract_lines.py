@@ -8,6 +8,7 @@ from ocrd_utils import (
     assert_file_grp_cardinality,
     coordinates_of_segment,
     polygon_from_points,
+    bbox_from_points,
     MIME_TO_EXT
 )
 from ocrd_modelfactory import page_from_file
@@ -57,7 +58,7 @@ class ExtractLines(Processor):
         Create a plain text file for the text content, too.
         
         Write all files in the directory of the output file group, named like so:
-        * ID + '.raw.png': line image (if the workflow provides raw images)
+        * ID + '.png': line image (if the workflow provides raw images)
         * ID + '.bin.png': line image (if the workflow provides binarized images)
         * ID + '.nrm.png': line image (if the workflow provides grayscale-normalized images)
         * ID + '.json': line metadata.
@@ -96,7 +97,6 @@ class ExtractLines(Processor):
                     feature_filter=self.parameter['feature_filter'],
                     transparency=self.parameter['transparency'])
                 rtype = region.get_type()
-                
                 lines = region.get_TextLine()
                 if not lines:
                     LOG.warning("Region '%s' contains no text lines", region.id)
@@ -108,6 +108,10 @@ class ExtractLines(Processor):
                     lpolygon_rel = coordinates_of_segment(
                         line, line_image, line_coords).tolist()
                     lpolygon_abs = polygon_from_points(line.get_Coords().points)
+                    lbbox_abs = bbox_from_points(line.get_Coords().points)
+                    lbbox_rel = bbox_from_points(" ".join([",".join(str(num) for num in point) for point in lpolygon_rel]))
+                    if self.parameter['mode'] in ['bbox']:
+                        line_image = page_image.crop(lbbox_abs)
                     ltext = line.get_TextEquiv()
                     if not ltext:
                         LOG.warning("Line '%s' contains no text content", line.id)
@@ -156,6 +160,8 @@ class ExtractLines(Processor):
                                     'DPI': dpi,
                                     'coords_rel': lpolygon_rel,
                                     'coords_abs': lpolygon_abs,
+                                    'bbox_rel': lbbox_rel,
+                                    'bbox_abs': lbbox_abs,
                                     'region.ID': region.id,
                                     'region.type': rtype,
                                     'page.ID': page_id,
@@ -168,17 +174,21 @@ class ExtractLines(Processor):
                     elif 'grayscale_normalized' in lfeatures:
                         extension = '.nrm'
                     else:
-                        extension = '.raw'
+                        extension = ''
 
                     file_id = make_file_id(input_file, self.output_file_grp)
-                    file_path = self.workspace.save_image_file(
-                        line_image,
-                        file_id + '_' + region.id + '_' + line.id + extension,
-                        self.output_file_grp,
-                        page_id=page_id,
-                        mimetype=self.parameter['mimetype'])
+                    if self.parameter['output'] in ['pair', 'image']:
+                        file_path = self.workspace.save_image_file(
+                            line_image,
+                            file_id + '_' + region.id + '_' + line.id + extension,
+                            self.output_file_grp,
+                            page_id=page_id,
+                            mimetype=self.parameter['mimetype'])
+                    else:
+                        file_path = self.output_file_grp+file_id+MIME_TO_EXT[self.parameter['mimetype']]
                     file_path = file_path.replace(extension + MIME_TO_EXT[self.parameter['mimetype']], '.json')
                     json.dump(description, open(file_path, 'w'))
-                    file_path = file_path.replace('.json', '.gt.txt')
-                    with open(file_path, 'wb') as f:
-                        f.write((ltext + '\n').encode('utf-8'))
+                    if self.parameter['output'] in ['pair', 'text']:
+                        file_path = file_path.replace('.json', '.gt.txt')
+                        with open(file_path, 'wb') as f:
+                            f.write((ltext + '\n').encode('utf-8'))
