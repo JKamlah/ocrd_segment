@@ -4,6 +4,7 @@ from .replace_original import ReplaceOriginal
 from .replace_page import ReplacePage
 from .extract_pages import ExtractPages
 from .extract_regions import ExtractRegions
+from .replace_lines import ReplaceLines
 from .extract_lines import ExtractLines
 from .extract_words import ExtractWords
 from .extract_glyphs import ExtractGlyphs

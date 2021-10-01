@@ -118,6 +118,11 @@
       ],
       "steps": ["layout/segmentation/region"],
       "parameters": {
+        "categories": {
+          "type": "object",
+          "default": {},
+          "description": "Mapping from COCO categories (or supercategories) to PAGE element identifiers (or subtypes) to apply before trying source mapping. (Example: {'image': 'ImageRegion', 'text': 'TextRegion'}.)"
+        }
       }
     },
     "ocrd-segment-extract-pages": {
@@ -274,6 +279,18 @@
       ],
       "steps": ["layout/analysis"],
       "parameters": {
+        "output": {
+          "type": "string",
+          "enum": ["pair", "image", "text", "json"],
+          "default": "pair",
+          "description": "Set output ['pair' -> image, text, json, 'images' -> image, json, 'text' -> text, json, 'json' -> file]"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["polygon", "bbox"],
+          "default": "bbox",
+          "description": "Set mode polygon or bbox."
+        },
         "feature_filter": {
           "type": "string",
           "default": "",
@@ -405,6 +422,29 @@
               "default": true,
               "description": "re-calculate coordinates for all segments of the structural hierarchy to be consistent with the coordinate system of the first input file group (vital after cropping, deskewing etc; disable only if input coordinates can be assumed to be consistent with the second input file group)"
           }
+      }
+    },
+    "ocrd-segment-replace-lines": {
+      "executable": "ocrd-segment-replace-lines",
+      "categories": ["Text postprocessing"],
+      "description": "Replace line information based on extracted and modified line information",
+      "input_file_grp": [
+        "OCR-D-SEG-LINE",
+        "OCR-D-GT-SEG-LINE",
+        "OCR-D-OCR"
+      ],
+      "output_file_grp": [
+        "OCR-D-SEG-LINE",
+        "OCR-D-OCR"
+      ],
+      "steps": ["layout/analysis"],
+      "parameters": {
+          "mode": {
+            "type": "string",
+          "enum": ["text", "style", "all"],
+          "default": "text",
+          "description": "Replace either only text or only style information or both"
+        }
       }
     },
     "ocrd-segment-evaluate": {

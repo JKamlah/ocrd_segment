@@ -9,6 +9,7 @@ from .replace_original import ReplaceOriginal
 from .replace_page import ReplacePage
 from .extract_pages import ExtractPages
 from .extract_regions import ExtractRegions
+from .replace_lines import ReplaceLines
 from .extract_lines import ExtractLines
 from .extract_words import ExtractWords
 from .extract_glyphs import ExtractGlyphs
@@ -52,6 +53,11 @@ def ocrd_segment_extract_pages(*args, **kwargs):
 @ocrd_cli_options
 def ocrd_segment_extract_regions(*args, **kwargs):
     return ocrd_cli_wrap_processor(ExtractRegions, *args, **kwargs)
+
+@click.command()
+@ocrd_cli_options
+def ocrd_segment_replace_lines(*args, **kwargs):
+    return ocrd_cli_wrap_processor(ReplaceLines, *args, **kwargs)
 
 @click.command()
 @ocrd_cli_options
