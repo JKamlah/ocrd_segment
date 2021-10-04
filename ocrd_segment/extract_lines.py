@@ -110,7 +110,7 @@ class ExtractLines(Processor):
                     lpolygon_abs = polygon_from_points(line.get_Coords().points)
                     lbbox_abs = bbox_from_points(line.get_Coords().points)
                     lbbox_rel = bbox_from_points(" ".join([",".join(str(num) for num in point) for point in lpolygon_rel]))
-                    if self.parameter['mode'] in ['bbox']:
+                    if self.parameter['cutmode'] in ['bbox']:
                         line_image = page_image.crop(lbbox_abs)
                     ltext = line.get_TextEquiv()
                     if not ltext:
@@ -177,7 +177,7 @@ class ExtractLines(Processor):
                         extension = ''
 
                     file_id = make_file_id(input_file, self.output_file_grp)
-                    if self.parameter['output'] in ['pair', 'image']:
+                    if self.parameter['outputmode'] in ['pair', 'image']:
                         file_path = self.workspace.save_image_file(
                             line_image,
                             file_id + '_' + region.id + '_' + line.id + extension,
@@ -188,7 +188,7 @@ class ExtractLines(Processor):
                         file_path = self.output_file_grp+file_id+MIME_TO_EXT[self.parameter['mimetype']]
                     file_path = file_path.replace(extension + MIME_TO_EXT[self.parameter['mimetype']], '.json')
                     json.dump(description, open(file_path, 'w'))
-                    if self.parameter['output'] in ['pair', 'text']:
+                    if self.parameter['outputmode'] in ['pair', 'text']:
                         file_path = file_path.replace('.json', '.gt.txt')
                         with open(file_path, 'wb') as f:
                             f.write((ltext + '\n').encode('utf-8'))

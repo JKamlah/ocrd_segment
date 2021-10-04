@@ -279,13 +279,13 @@
       ],
       "steps": ["layout/analysis"],
       "parameters": {
-        "output": {
+        "outputmode": {
           "type": "string",
           "enum": ["pair", "image", "text", "json"],
           "default": "pair",
           "description": "Set output ['pair' -> image, text, json, 'images' -> image, json, 'text' -> text, json, 'json' -> file]"
         },
-        "mode": {
+        "cutmode": {
           "type": "string",
           "enum": ["polygon", "bbox"],
           "default": "bbox",
