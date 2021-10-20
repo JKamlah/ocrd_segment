@@ -30,7 +30,7 @@ class ReplaceLines(Processor):
         super(ReplaceLines, self).__init__(*args, **kwargs)
 
     def process(self):
-        """Replace line information with cropped and edited lines from extract lines.
+        """Replace line information with edited text and metadata information extracted by ExtractLines.
 
          The hierarchy will not be changed.
 
@@ -57,8 +57,7 @@ class ReplaceLines(Processor):
                 gttextfile = Path(linefile.url.replace(MIME_TO_EXT[linefile.mimetype], '.gt.txt'))
                 metafile = Path(linefile.url.replace(MIME_TO_EXT[linefile.mimetype], '.json'))
                 if not gttextfile.exists(): continue
-                with open(gttextfile, 'r') as fin:
-                    gttext = fin.read().strip()
+                gttext = gttextfile.open('r').read().strip()
                 if metafile.exists():
                     with open(metafile, 'r') as fin:
                         metadata = json.loads(fin.read())
@@ -69,22 +68,38 @@ class ReplaceLines(Processor):
             for rindex, region in enumerate(page.get_AllRegions()):
                 ensure_consistent(region)
                 if isinstance(region, TextRegionType):
-                    for lindex,line in enumerate(region.get_TextLine()):
-                        if region_line_dict.get(region.id + '_' + line.id, None):
-                            te = line.get_TextEquiv()[0]
-                            te.set_Unicode(region_line_dict.get(region.id + '_' + line.id, None).get('text'))
-                            line.set_TextEquiv([te])
-                            ensure_consistent(line)
-
+                    for lindex, line in enumerate(region.get_TextLine()):
+                        line_id = region.id + '_' + line.id
+                        if region_line_dict.get(line_id, None):
+                            if self.parameter['level'] in ['text', 'all']:
+                                te = line.get_TextEquiv()[0]
+                                te.set_Unicode(region_line_dict.get(line_id, None).get('text'))
+                                line.set_TextEquiv([te])
+                                ensure_consistent(line)
+                            if self.parameter['level'] in ['style', 'all']:
+                                ts = line.get_TextStyle()
+                                if not ts:
+                                    from ocrd_models.ocrd_page import TextStyleType
+                                    ts = TextStyleType()
+                                if region_line_dict.get(line_id, None).get('lstyle', False):
+                                    for ts_key, ts_val in region_line_dict.get(line_id, None).get('lstyle', {}).items():
+                                        setattr(ts, ts_key, ts_val)
+                                    line.set_TextStyle(ts)
+                                    ensure_consistent(line)
             # update METS (add the PAGE file):
             pcgts.set_Page(page)
             file_id = input_file.url.replace(MIME_TO_EXT[input_file.mimetype], '')
-            out = self.workspace.add_file(
-                ID=file_id,
-                file_grp=self.output_file_grp,
-                pageId=input_file.pageId,
-                local_filename=os.path.join(self.output_file_grp, file_id + '.xml'),
-                mimetype=MIMETYPE_PAGE,
-                content=to_xml(pcgts))
-            LOG.info('created file ID: %s, file_grp: %s, path: %s',
-                     file_id, self.output_file_grp, out.local_filename)
+            if self.output_file_grp != self.input_file_grp[0]:
+                with open(os.path.join(self.output_file_grp, file_id + '.xml'), 'wb') as f:
+                    f.write(bytes(to_xml(pcgts), 'utf-8'))
+            else:
+                self.workspace.overwrite_mode = True
+                out = self.workspace.add_file(
+                    ID=file_id,
+                    file_grp=self.output_file_grp,
+                    pageId=input_file.pageId,
+                    local_filename=os.path.join(self.output_file_grp, file_id + '.xml'),
+                    mimetype=MIMETYPE_PAGE,
+                    content=to_xml(pcgts))
+                LOG.info('created file ID: %s, file_grp: %s, path: %s',
+                         file_id, self.output_file_grp, out.local_filename)

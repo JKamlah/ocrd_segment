@@ -279,6 +279,11 @@
       ],
       "steps": ["layout/analysis"],
       "parameters": {
+        "skip_ref": {
+          "type": "boolean",
+          "default": true,
+          "description": "Skip adding the reference to the METS"
+        },
         "outputmode": {
           "type": "string",
           "enum": ["pair", "image", "text", "json"],
@@ -439,7 +444,7 @@
       ],
       "steps": ["layout/analysis"],
       "parameters": {
-          "mode": {
+          "level": {
             "type": "string",
           "enum": ["text", "style", "all"],
           "default": "text",

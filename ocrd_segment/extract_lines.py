@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import json
+from pathlib import Path
 
 from ocrd_utils import (
     getLogger,
@@ -175,20 +176,24 @@ class ExtractLines(Processor):
                         extension = '.nrm'
                     else:
                         extension = ''
-
-                    file_id = make_file_id(input_file, self.output_file_grp)
-                    if self.parameter['outputmode'] in ['pair', 'image']:
-                        file_path = self.workspace.save_image_file(
-                            line_image,
-                            file_id + '_' + region.id + '_' + line.id + extension,
-                            self.output_file_grp,
-                            page_id=page_id,
-                            mimetype=self.parameter['mimetype'])
+                    if input_file.fileGrp in input_file.ID or not input_file.pageId:
+                        file_id = make_file_id(input_file, self.output_file_grp)
                     else:
-                        file_path = self.output_file_grp+file_id+MIME_TO_EXT[self.parameter['mimetype']]
-                    file_path = file_path.replace(extension + MIME_TO_EXT[self.parameter['mimetype']], '.json')
-                    json.dump(description, open(file_path, 'w'))
+                        file_id = self.output_file_grp+'_'+input_file.pageId
+                    file_path = Path('.').joinpath(self.output_file_grp)
+                    file_name = file_id + '_' + region.id + '_' + line.id
+                    if self.parameter['outputmode'] in ['pair', 'image']:
+                        if self.parameter['skip_ref']:
+                            file_path.mkdir(exist_ok=True)
+                            line_image.save(file_path.joinpath(file_name + extension + MIME_TO_EXT[self.parameter['mimetype']]))
+                        else:
+                            self.workspace.save_image_file(
+                                line_image,
+                                file_name + extension,
+                                self.output_file_grp,
+                                page_id=page_id,
+                                mimetype=self.parameter['mimetype'])
+                    json.dump(description, open(file_path.joinpath(file_name + '.json'), 'w'))
                     if self.parameter['outputmode'] in ['pair', 'text']:
-                        file_path = file_path.replace('.json', '.gt.txt')
-                        with open(file_path, 'wb') as f:
-                            f.write((ltext + '\n').encode('utf-8'))
+                        with open(file_path.joinpath(file_name + '.gt.txt'), 'wb') as f:
+                            f.write((ltext).encode('utf-8'))
